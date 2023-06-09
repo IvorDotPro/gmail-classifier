@@ -1,0 +1,37 @@
+{
+  "name": "ivordotpro/gmail-classifier",
+  "description": "A PHP package for classifying Gmail messages using AI machine learning",
+  "type": "library",
+  "keywords": ["gmail", "classifier", "machine-learning", "php","AI","Artificial Intelligence","email"],
+  "homepage": "https://github.com/ivordotpro/gmail-classifier",
+  "license": "MIT",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Ivor Brands",
+      "email": "mail@ivor.pro",
+      "homepage": "https://ivor.pro",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "google/apiclient": "^2.10",
+    "php-ai/php-ml": "^0.10.0",
+    "ezyang/htmlpurifier": "^4.13"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Ivordotpro\\GmailClassifier\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Ivordotpro\\GmailClassifier\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "stable"
+}
