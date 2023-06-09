@@ -6,7 +6,6 @@ use Google\Service\Gmail;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 
-require_once(__DIR__ . '/helpers.php');
 class GmailClient
 {
     private $client;

@@ -15,7 +15,6 @@ use HTMLPurifier;
 use HTMLPurifier_Config;
 use Google\Client as GoogleClient;
 
-require_once(__DIR__ . 'src/helpers.php');
 /**
  * Class GmailClassifier
  * @package Ivordotpro\GmailClassifier
@@ -109,7 +108,7 @@ class GmailClassifier
                 // Fetch the list of message ids with this label
                 $messageIdsList = $gmail->users_messages->listUsersMessages('me', [
                 'labelIds' => [$labelId],
-                'maxResults' => 1000 // set maxResults to 1000
+                'maxResults' => 500
                 ]);
 
                 // Iterate through each message ID and get message details

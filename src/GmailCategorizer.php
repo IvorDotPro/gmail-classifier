@@ -15,7 +15,6 @@ use Phpml\Preprocessing\Normalizer;
 use Phpml\Preprocessing\Imputer\Strategy\MostFrequentStrategy;
 
 
-require_once(__DIR__ . '/helpers.php');
 
 /**
  *
