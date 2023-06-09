@@ -1,4 +1,4 @@
-# Gmail Classifier README
+# Gmail Classifier
 
 This package is a PHP library that uses the Gmail API to classify your emails based on labels. It employs the PHP-ML library for machine learning, to create a model that helps in the classification of emails.
 
@@ -13,7 +13,7 @@ This package is a PHP library that uses the Gmail API to classify your emails ba
 - [Using the Model](#using-the-model)
 
 ## Prerequisites
-- PHP 7.1 or higher
+- PHP 8.0 or higher
 - Composer
 - Google account with Gmail enabled
 - Google Cloud Project
@@ -57,7 +57,7 @@ Labels without a numeric prefix will be ignored. Label your emails accordingly. 
 2. Use PHP's built-in server to start your local web server: `php -S localhost:8080`.
 3. In your browser, navigate to `http://localhost:8080/train.php`.
 4. The first time you access it, you will be redirected to a Google login page. Log in with the Gmail account you want to access.
-5. Allow the app to view your email messages and settings.
+5. Allow the app to view your email mesages and settings.
 6. Your browser will redirect back to the local server and begin fetching and processing your Gmail data for training the model.
 
 ## Ignoring Certain Labels
@@ -73,4 +73,17 @@ $predictedLabel = $emailClassifier->classify($newEmailData);
 ```
 For further information on PHP-ML library, visit the [official PHP-ML documentation](http://php-ml.readthedocs.org/).
 
-That’s it! You should now have a trained model that can classify your Gmail emails. Note that as you receive more emails, it might be beneficial to re-train your model occasionally.
+## Examples
+Examples on training and using models can be found in the examples directory.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+A big thanks to [PHP-ML](http://php-ml.readthedocs.org/) for making machine learning in PHP possible.
+
+## Last words
+If you have any questions or suggestions, feel free to open an issue or contact me at [mail@ivor.pro](mailto:ivor.pro).
+Don't forget to retrain your model from time to time to keep it up to date.
+
+ 
