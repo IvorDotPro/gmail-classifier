@@ -3,5 +3,6 @@
 /composer.lock
 /train.php
 /private/
-
+models/model.dat
+categorize.php
 

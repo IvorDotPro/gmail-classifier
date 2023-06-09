@@ -2,6 +2,7 @@
 
 namespace Ivordotpro\GmailClassifier;
 
+
 use Google\Service\Gmail;
 use Phpml\Classification\NaiveBayes;
 use Phpml\CrossValidation\StratifiedRandomSplit;
@@ -14,6 +15,7 @@ use HTMLPurifier;
 use HTMLPurifier_Config;
 use Google\Client as GoogleClient;
 
+require_once(__DIR__ . 'src/helpers.php');
 /**
  * Class GmailClassifier
  * @package Ivordotpro\GmailClassifier
@@ -120,16 +122,28 @@ class GmailClassifier
 
                     // Extract content, sender, and subject from the message payload headers
                     $headers = $message->getPayload()->getHeaders();
-                    $meta = '';
+
                     $data = [
                     'label' => $label->getId(),
                     'labelname' => $label->getName(),
                     'content' => ''
                     ];
 
+                    $fromHeader = '';
+                    $subjectHeader = '';
+
                     foreach ($headers as $header) {
-                        $meta .= $header->getName() . ': ' . $header->getValue() . "\n";
+                        $name = $header->getName();
+                        $value = $header->getValue();
+
+                        if ($name === 'From') {
+                            $fromHeader = $value;
+                        } elseif ($name === 'Subject') {
+                            $subjectHeader = $value;
+                        }
                     }
+
+                    $meta = "$fromHeader  $subjectHeader\n";
 
                     $bodyData = $message->getPayload()->getBody()->getData();
                     $decodedBody = $purifier->purify(decodeBody($bodyData));

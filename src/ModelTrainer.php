@@ -9,6 +9,8 @@ use Phpml\FeatureExtraction\TokenCountVectorizer;
 use Phpml\Pipeline;
 use Phpml\Tokenization\WhitespaceTokenizer;
 
+require_once(__DIR__ . '/helpers.php');
+
 class ModelTrainer
 {
     /**
@@ -41,7 +43,7 @@ class ModelTrainer
         new TokenCountVectorizer(new WhitespaceTokenizer()),
         ], new NaiveBayes());
 
-        echo "\n\nTraining model...\n\n";
+        output("\n\nTraining model...\n\n", 'info');
 
         // Train the model
         $pipeline->train(
@@ -49,9 +51,21 @@ class ModelTrainer
         $split->getTrainLabels()
         );
 
-        // Save the trained model to a file
-        file_put_contents($modelFilePath, serialize($pipeline));
+        output("\n\nModel trained, compressing\n\n", 'success');
+        $data = gzcompress(serialize($pipeline),9);
 
-        echo "\n\nModel trained and saved to {$modelFilePath}\n\n";
+        // Save the trained model to a file
+        output("\n\nWriting to disk\n\n", 'info');
+        @unlink($modelFilePath);
+        $fp = fopen($modelFilePath,'w');
+        if (flock($fp, LOCK_EX)) {
+            fwrite($fp, $data);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        } else {
+            throw new \Exception(Color::RED . "Couldn't lock the file {$modelFilePath}!" . Color::RESET);
+        }
+
+        output("\n\nModel trained and saved to {$modelFilePath}\n\n", 'success');
     }
 }

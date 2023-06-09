@@ -6,6 +6,7 @@ use Google\Service\Gmail;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 
+require_once(__DIR__ . '/helpers.php');
 class GmailClient
 {
     private $client;
@@ -22,6 +23,7 @@ class GmailClient
      */
     public function __construct(string $credentialsPath, string $tokenPath, string $tempFolder)
     {
+        ini_set('memory_limit', -1);
         $this->tempFolder = $tempFolder;
 
         $config = HTMLPurifier_Config::createDefault();
@@ -34,8 +36,6 @@ class GmailClient
         $this->client->setScopes([
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/gmail.modify',
-        'https://www.googleapis.com/auth/gmail.settings.basic',
-        'https://www.googleapis.com/auth/gmail.settings.sharing'
         ]);
 
         $this->client->setAuthConfig($credentialsPath);
@@ -59,6 +59,9 @@ class GmailClient
      */
     private function refreshToken(string $tokenPath): void
     {
+        if(!file_exists($tokenPath)) {
+            file_put_contents($tokenPath, serialize($this->client->getAccessToken()));
+        }
         $token = unserialize(file_get_contents($tokenPath));
         $token = $this->client->fetchAccessTokenWithRefreshToken($token['refresh_token']);
         file_put_contents($tokenPath, serialize($token));
@@ -88,10 +91,11 @@ class GmailClient
      * Fetches and processes Gmail messages, then trains and saves the model.
      *
      * @param array $excludeLabels Array of label names to exclude.
+     * @param int $maxMessages Number of messages per folder to use for training.
      *
      * @return void
      */
-    public function fetchAndProcessMessages(array $excludeLabels = []): void
+    public function fetchAndProcessMessages(array $excludeLabels = [],$maxMessages=500): void
     {
         // Fetch labels
         $labels = $this->gmail->users_labels->listUsersLabels('me')->getLabels();
@@ -109,7 +113,7 @@ class GmailClient
                 echo "\n\nFetching messages for label: {$label->getName()}";
                 $messageIdsList = $this->gmail->users_messages->listUsersMessages('me', [
                 'labelIds' => [$label->getId()],
-                'maxResults' => 1000 // Set maxResults to 1000
+                'maxResults' => $maxMessages
                 ]);
 
                 foreach ($messageIdsList->getMessages() as $messageIdData) {
@@ -117,37 +121,80 @@ class GmailClient
                     $messageId = $messageIdData->getId();
                     $message = $this->gmail->users_messages->get('me', $messageId);
                     $headers = $message->getPayload()->getHeaders();
-                    $meta = '';
+
+
+                    $fromHeader = '';
+                    $subjectHeader = '';
 
                     foreach ($headers as $header) {
-                        $meta .= $header->getName() . ': ' . $header->getValue() . "\n";
-                    }
+                        $name = $header->getName();
+                        $value = $header->getValue();
 
-                    $words = explode(' ', trim(str_replace(["\n", "\t", '  '], ' ',
-                    $this->purifier->purify($this->decodeBody($message->getPayload()->getBody()->getData())))));
-
-                    $content = '';
-                    foreach ($words as $w) {
-                        $w = trim($w);
-                        if ($w != '') {
-                            $content .= $w . ' ';
+                        if ($name === 'From') {
+                            $fromHeader = $value;
+                        } elseif ($name === 'Subject') {
+                            $subjectHeader = $value;
                         }
                     }
 
-                    $data = [
-                    'label' => $label->getId(),
-                    'labelname' => $label->getName(),
-                    'content' => $meta . "\n\n" . $content
-                    ];
+                    $meta = "$fromHeader $subjectHeader ";
 
-                    $messagesData[] = $data;
+                    try {
+                        $boduData = $message->getPayload()->getBody()->getData();
+
+                        if($boduData == null) {
+                            $parts = $message->getPayload()->getParts();
+                            foreach ($parts as $part) {
+                                switch($part->getMimeType()) {
+
+
+                                    case 'text/html':
+                                    case 'text/plain':
+                                    case 'multipart/alternative':
+                                    $boduData = $part->getBody()->getData();
+                                    break;
+
+                                    default:
+                                        throw new \Exception('Unknown mime type: ' . $part->getMimeType());
+                                        break;
+                                }
+                            }
+                        }
+
+                        if($boduData == null) {
+                            continue;
+                        }
+
+                        $words = explode(' ', trim(str_replace(["\n", "\t", '  '], ' ',
+                        $this->purifier->purify($this->decodeBody($boduData)))));
+
+                        $content = '';
+                        foreach ($words as $w) {
+                            $w = trim($w);
+                            if ($w != '') {
+                                $content .= $w . ' ';
+                            }
+                        }
+
+                        $data = [
+                        'label' => $label->getId(),
+                        'labelname' => $label->getName(),
+                        'content' => $meta . "\n\n" . $content
+                        ];
+
+                        $messagesData[] = $data;
+
+                    } catch (\Exception $e) {
+                        echo '!'; // Skip the message'
+                    }
+
                 }
             }
         }
 
         // Process the messages data to train the model
         $modelTrainer = new ModelTrainer();
-        $modelTrainer->trainAndSaveModel($messagesData, $this->tempFolder . '/model.dat');
+        $modelTrainer->trainAndSaveModel($messagesData,  'models/model.dat');
     }
 
     /**
@@ -157,7 +204,7 @@ class GmailClient
      *
      * @return string Decoded body data.
      */
-    private function decodeBody(string $bodyData): string
+    private function decodeBody(string|null $bodyData): string
     {
         $body = strtr($bodyData, '-_', '+/');
         return base64_decode($body);
